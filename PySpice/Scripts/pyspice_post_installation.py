@@ -26,6 +26,7 @@
 
 from pathlib import Path
 from zipfile import ZipFile
+from py7zr import SevenZipFile
 import argparse
 import os
 import shutil
@@ -111,8 +112,9 @@ class PySpicePostInstallation:
 
     NGSPICE_BASE_URL = 'https://sourceforge.net/projects/ngspice/files'
     NGSPICE_RELEASE_URL = NGSPICE_BASE_URL + '/ng-spice-rework'
-    NGSPICE_WINDOWS_DLL_URL = NGSPICE_RELEASE_URL + '/{0}/ngspice-{0}_dll_64.zip'
-    NGSPICE_WINDOWS_DLL_OLD_URL = NGSPICE_RELEASE_URL + '/old-releases/{0}/ngspice-{0}_dll_64.zip'
+    NGSPICE_WINDOWS_DLL_URL = NGSPICE_RELEASE_URL + '/{0}/ngspice-{0}_dll_64.7z'
+    NGSPICE_WINDOWS_DLL_OLD_URL_ZIP = NGSPICE_RELEASE_URL + '/old-releases/{0}/ngspice-{0}_dll_64.zip'
+    NGSPICE_WINDOWS_DLL_OLD_URL_7Z = NGSPICE_RELEASE_URL + '/old-releases/{0}/ngspice-{0}_dll_64.7z'
     NGSPICE_MANUAL_URL = NGSPICE_RELEASE_URL + '/{0}/ngspice-{0}-manual.pdf/download'
     NGSPICE_MANUAL_OLD_URL = NGSPICE_RELEASE_URL + '/old-releases/{0}/ngspice-{0}-manual.pdf/download'
 
@@ -214,15 +216,22 @@ class PySpicePostInstallation:
         with tempfile.TemporaryDirectory() as tmp_directory:
             tmp_directory = Path(tmp_directory)
             url = self.NGSPICE_WINDOWS_DLL_URL.format(self.ngspice_version)
-            zip_path = tmp_directory.joinpath('ngspice-{}_dll_64.zip'.format(self.ngspice_version))
+            zip_path = tmp_directory.joinpath('ngspice-{}_dll_64.7z'.format(self.ngspice_version))
             dst_path = Path(NgSpice.__file__).parent
             try:
                 self._download_file(url, zip_path)
             except requests.exceptions.HTTPError:
                 print('Download failed, trying another URL...')
-                url = self.NGSPICE_WINDOWS_DLL_OLD_URL.format(self.ngspice_version)
-                self._download_file(url, zip_path)
-            with ZipFile(zip_path) as zip_file:
+                url = self.NGSPICE_WINDOWS_DLL_OLD_URL_7Z.format(self.ngspice_version)
+                zip_path = tmp_directory.joinpath('ngspice-{}_dll_64.7z'.format(self.ngspice_version))
+                try:
+                    self._download_file(url, zip_path)
+                except:
+                    print('Download failed, trying one more URL...')
+                    url = self.NGSPICE_WINDOWS_DLL_OLD_URL_ZIP.format(self.ngspice_version)
+                    zip_path = tmp_directory.joinpath('ngspice-{}_dll_64.zip'.format(self.ngspice_version))
+                    self._download_file(url, zip_path)
+            with (SevenZipFile(zip_path) if zip_path.name.endswith('7z') else ZipFile(zip_path)) as zip_file:
                 zip_file.extractall(path=dst_path)
                 print('Extracted {} in {}'.format(zip_path, dst_path.joinpath('Spice64_dll')))
 
