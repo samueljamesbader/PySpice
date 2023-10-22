@@ -160,6 +160,12 @@ class PySpicePostInstallation:
             help='download examples',
         )
 
+        parser.add_argument(
+            '--proxy',
+            type=str, default=None,
+            help='proxy for any downloads',
+        )
+
         self._args = parser.parse_args()
 
         count = 0
@@ -185,8 +191,10 @@ class PySpicePostInstallation:
     ##############################################
 
     def _download_file(self, url, dst_path):
+        proxies={'http': proxy, 'https': proxy, 'ftp': proxy}\
+            if (proxy:=self._args.proxy) else None
         print('Get {} ... -> {}'.format(url, dst_path))
-        response = requests.get(url, allow_redirects=True)
+        response = requests.get(url, allow_redirects=True, proxies=proxies)
         if response.status_code != requests.codes.ok:
             response.raise_for_status()
         with open(dst_path, mode='wb') as fh:
