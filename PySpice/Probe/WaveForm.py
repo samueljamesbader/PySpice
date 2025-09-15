@@ -82,7 +82,7 @@ class WaveForm(UnitValues):
     @classmethod
     def from_array(cls, name, array, title=None, abscissa=None):
         # Fixme: ok ???
-        obj = cls(name, None, array.shape, title=title, abscissa=abscissa)
+        obj = cls(name, None, array.shape, dtype=array.dtype, title=title, abscissa=abscissa)
         obj[...] = array[...]
         return obj
 
